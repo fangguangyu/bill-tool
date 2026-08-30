@@ -100,6 +100,7 @@
         <div class="card-h">订单输入<span>姓名、「标」「真空」自动忽略</span></div>
         <textarea id="input" placeholder="例如：&#10;无米粿：韭菜30、萝卜干8、竹笋8、菜头丸26&#10;或：韭菜20 紫菜卷15 菜脯10 咸蛋黄5"></textarea>
         <div class="row">
+          <button class="btn ghost" onclick="clearInput()">清空</button>
           <button class="btn" onclick="generate()">生成账单</button>
         </div>
       </div>
@@ -132,26 +133,6 @@
           <li>「包」=「斤」；人名、「标」「真空」自动忽略不计钱</li>
         </ul>
       </div>
-      <div class="card">
-        <div class="card-h">认不出的写法怎么办</div>
-        <ul class="list">
-          <li>账单下方若提示「无法识别」，说明该写法规则里还没有；把那行从订单里去掉即可正常算其余的</li>
-          <li>要加新菜品、别名或改价，直接告诉老板，老板加好重新发布，全家刷新就能认</li>
-        </ul>
-      </div>
-      <div class="card">
-        <div class="card-h">计量单位</div>
-        <p class="p">按斤：无米粿系列、水晶球系列、粿肉、虎皮卷、春卷、菜头丸、小土豆、辣椒水、小米</p>
-        <p class="p">其他：紫菜卷按卷、红桃粿按个、小桃粿按包、香芋条/土豆条按条</p>
-      </div>
-      <div class="card">
-        <div class="card-h">新增菜品（老板专用）</div>
-        <ul class="list">
-          <li>菜品和价格由老板统一内置在网页里，重新发布后全店刷新即用，不用家人各自维护</li>
-          <li>要加新菜品、别名或改价，直接告诉老板，老板加好重新发布即可</li>
-        </ul>
-      </div>
-      <div class="foot">价格由老板统一内置 · 规则内置网页 · 改价重新发布即全店生效</div>
     </section>
 
   </main>
@@ -600,6 +581,12 @@ function parseInput(text) {
 function generate() {
   var text = document.getElementById("input").value;
   renderBill(parseInput(text), text);
+}
+
+function clearInput() {
+  document.getElementById("input").value = "";
+  var rc = document.getElementById("resultCard");
+  if (rc) rc.classList.add("hidden");
 }
 
 function renderBill(res, sourceText) {
