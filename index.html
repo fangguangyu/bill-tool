@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>潮汕无米粿 · 账单生成器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #faf7f2; color: #2b2b2b; max-width: 560px; margin: 0 auto; overflow: hidden;
+  }
+  .app { display: flex; flex-direction: column; height: 100dvh; height: 100vh; }
+
+  header { flex: none; padding: 14px 16px 10px; display: flex; align-items: baseline; gap: 8px; }
+  header h1 { font-size: 16px; color: #e8590c; font-weight: 600; letter-spacing: 0.5px; }
+  header .st { margin-left: auto; font-size: 11.5px; color: #2f9e44; }
+  header .st.off { color: #b3ab9c; }
+
+  main { flex: 1; overflow-y: auto; padding: 0 12px 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  main::-webkit-scrollbar { display: none; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+
+  .card { background: #fff; border: 1px solid #f0e9dc; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+  .card-h { display: flex; align-items: baseline; gap: 6px; font-size: 13.5px; font-weight: 600; color: #333; margin-bottom: 10px; }
+  .card-h span { font-size: 11.5px; font-weight: 400; color: #aaa; }
+  .card-h .link { margin-left: auto; font-size: 12px; color: #e8590c; cursor: pointer; font-weight: 500; }
+
+  textarea {
+    width: 100%; min-height: 128px; border: 1.5px solid #ece4d5; border-radius: 10px;
+    padding: 11px 12px; font-size: 15px; line-height: 1.7; resize: none; background: #fffdf9;
+    font-family: inherit;
+  }
+  textarea:focus { outline: none; border-color: #e8590c; }
+  .inp {
+    width: 100%; border: 1.5px solid #ece4d5; border-radius: 10px;
+    padding: 10px 12px; font-size: 14px; background: #fffdf9;
+    font-family: inherit; margin-top: 8px;
+  }
+  .inp:focus { outline: none; border-color: #e8590c; }
+
+  .btn {
+    display: block; width: 100%; border: none; border-radius: 11px; padding: 12px;
+    font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px;
+    background: #e8590c; color: #fff; font-family: inherit;
+  }
+  .btn:active { opacity: 0.85; }
+  .btn.ghost { background: #fff6ee; color: #e8590c; border: 1px solid #ffe0c2; font-weight: 500; font-size: 13.5px; padding: 10px; }
+  .card-h .btn.mini { margin: 0 0 0 auto; width: auto; align-self: center; padding: 5px 11px; font-size: 12px; border-radius: 9px; }
+  .row { display: flex; gap: 8px; }
+  .row .btn { flex: 1; }
+
+  .order-item { border: 1px solid #f0e9dc; border-radius: 10px; padding: 9px 11px; margin-top: 7px; background: #fffdf9; }
+  .order-item summary { font-size: 13.5px; font-weight: 600; cursor: pointer; color: #2b2b2b; list-style: none; }
+  .order-item pre {
+    font-size: 12.5px; line-height: 1.7; white-space: pre-wrap; word-break: break-all;
+    margin-top: 7px; padding-top: 7px; border-top: 1px dashed #ece4d5; color: #666;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  .bill {
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 14.5px; line-height: 1.9;
+    background: #fffdf9; border: 1.5px solid #ece4d5; border-radius: 10px;
+    padding: 12px; white-space: pre-wrap; word-break: break-all;
+    max-height: 40vh; overflow-y: auto; scrollbar-width: none;
+  }
+  .bill::-webkit-scrollbar { display: none; }
+
+  .tip { font-size: 12.5px; color: #e8590c; margin-top: 8px; line-height: 1.6; }
+  .tip.green { color: #2f9e44; }
+  .tip.gray { color: #a49c8c; }
+  .hidden { display: none; }
+
+  .list { padding-left: 17px; }
+  .list li { font-size: 13px; line-height: 1.8; color: #5c5c5c; }
+  .p { font-size: 13px; line-height: 1.8; color: #5c5c5c; }
+  .p + .p { margin-top: 4px; }
+  .p b, .list b { color: #e8590c; font-weight: 600; }
+  .foot { text-align: center; font-size: 11px; color: #c3bcac; padding: 6px 0 10px; }
+
+  .tabbar { flex: none; display: flex; background: #fff; border-top: 1px solid #f0e9dc; padding-bottom: env(safe-area-inset-bottom); }
+  .tabbar button { flex: 1; border: none; background: none; padding: 8px 0 7px; font-size: 11px; color: #aaa; font-family: inherit; cursor: pointer; }
+  .tabbar button .ico { display: block; font-size: 17px; line-height: 1.3; }
+  .tabbar button.on { color: #e8590c; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header>
+    <h1>潮汕无米粿 · 账单生成器</h1>
+  </header>
+
+  <main>
+
+    <section class="panel on" id="tab-bill">
+      <div class="card">
+        <div class="card-h">订单输入<span>姓名、「标」「真空」自动忽略</span></div>
+        <textarea id="input" placeholder="例如：&#10;无米粿：韭菜30、萝卜干8、竹笋8、菜头丸26&#10;或：韭菜20 紫菜卷15 菜脯10 咸蛋黄5"></textarea>
+        <div class="row">
+          <button class="btn" onclick="generate()">生成账单</button>
+        </div>
+      </div>
+
+      <div class="card hidden" id="resultCard">
+        <div class="card-h">账单结果
+          <button class="btn ghost mini" onclick="copyBill()">📋 复制</button>
+        </div>
+        <div class="bill" id="billText"></div>
+        <div class="tip gray" id="noteText"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="tab-help">
+      <div class="card">
+        <div class="card-h">怎么用</div>
+        <ol class="list">
+          <li>把订单粘进输入框，点「生成账单」，账单自动排好版</li>
+          <li>点「📋 复制」把账单粘到微信发客户</li>
+        </ol>
+      </div>
+      <div class="card">
+        <div class="card-h">写法随意，这些它都认</div>
+        <ul class="list">
+          <li>错别字：无米果、菜谱、士豆、蛋黄、鲜笋、腐皮卷</li>
+          <li>分隔随意：空格、换行、逗号、顿号、句号、括号、冒号</li>
+          <li>数字在前在后都行：「20斤韭菜」「韭菜20」</li>
+          <li>水晶球标题行：单独一行「水晶球」，下面裸口味按水晶球算</li>
+          <li>猪脚圈（手作粿）自动展开成 香芋饼+土豆饼+萝卜饼；「三个口味各10」也认</li>
+          <li>「包」=「斤」；人名、「标」「真空」自动忽略不计钱</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-h">认不出的写法怎么办</div>
+        <ul class="list">
+          <li>账单下方若提示「无法识别」，说明该写法规则里还没有；把那行从订单里去掉即可正常算其余的</li>
+          <li>要加新菜品、别名或改价，直接告诉老板，老板加好重新发布，全家刷新就能认</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-h">计量单位</div>
+        <p class="p">按斤：无米粿系列、水晶球系列、粿肉、虎皮卷、春卷、菜头丸、小土豆、辣椒水、小米</p>
+        <p class="p">其他：紫菜卷按卷、红桃粿按个、小桃粿按包、香芋条/土豆条按条</p>
+      </div>
+      <div class="card">
+        <div class="card-h">新增菜品（老板专用）</div>
+        <ul class="list">
+          <li>菜品和价格由老板统一内置在网页里，重新发布后全店刷新即用，不用家人各自维护</li>
+          <li>要加新菜品、别名或改价，直接告诉老板，老板加好重新发布即可</li>
+        </ul>
+      </div>
+      <div class="foot">价格由老板统一内置 · 规则内置网页 · 改价重新发布即全店生效</div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="on" data-tab="bill" onclick="switchTab('bill')"><span class="ico">🧮</span>算账</button>
+    <button data-tab="help" onclick="switchTab('help')"><span class="ico">📖</span>说明</button>
+  </nav>
+
+</div>
+
+<script>
+/* ================= 价目表 ================= */
+var PRICES = {
+  // 无米粿系列（按斤）
+  wumiguo: {
+    "韭菜味": 8, "菜脯味": 10, "土豆味": 10, "玉米味": 10, "南瓜味": 10,
+    "红萝卜": 10, "香芋味": 12, "紫薯味": 11, "竹笋味": 11, "芋泥咸蛋味": 12
+  },
+  // 水晶球系列（按斤，12）
+  shuijingqiu: {
+    "芋泥": 12, "红豆": 12, "紫薯": 12, "准山": 12, "奶黄": 12,
+    "香芋": 12, "玉米": 12, "菜脯": 12, "韭菜": 12, "红萝卜": 12, "木耳": 12, "竹笋": 12
+  },
+  // 其他小吃
+  others: {
+    "香芋条": 12, "土豆条": 12, "蔬菜春卷": 16, "芋泥春卷": 16, "粿肉": 22,
+    "韭黄虎皮卷": 22, "韭黄虾卷": 25, "虾饺": 22, "香芋饼": 14, "土豆饼": 14,
+    "萝卜饼": 14, "菜头丸": 11, "小南瓜芋泥": 13, "紫菜卷": 22, "红桃粿": 2.5,
+    "辣椒水": 8, "小米": 13, "小土豆": 12, "小桃粿": 14, "韭菜春卷": 17
+  }
+};
+
+var UNIT_OVERRIDE = { "紫菜卷": "卷", "红桃粿": "个", "香芋条": "条", "土豆条": "条", "小桃粿": "包", "韭菜春卷": "斤" };
+
+/* ============ 同步规则 / 云端 / AI 识别 均已移除 ============ */
+/* 现为本纯静态规则网页：菜品与价格由老板统一内置，新增/改价走对话让老板重新发布。
+   写法映射（别名）直接写进代码，不再运行时从云端/本地读取。 */
+function switchTab(name) {
+  var tabs = ["bill", "help"];
+  for (var i = 0; i < tabs.length; i++) {
+    var p = document.getElementById("tab-" + tabs[i]);
+    if (p) p.className = "panel" + (tabs[i] === name ? " on" : "");
+  }
+  var btns = document.querySelectorAll(".tabbar button");
+  for (var j = 0; j < btns.length; j++) {
+    btns[j].className = btns[j].getAttribute("data-tab") === name ? "on" : "";
+  }
+  var m = document.querySelector("main");
+  if (m) m.scrollTop = 0;
+}
+// （云端初始化 / 管理口令 / 自助价目表 均已移除；纯静态规则网页，无后端）
+
+// 无米粿口味：纯口味名/带味名 → 显示名
+var WMG_FLAVOR = {
+  "芋泥咸蛋味": "芋泥咸蛋味", "芋泥咸蛋黄": "芋泥咸蛋味", "咸蛋黄": "芋泥咸蛋味", "蛋黄": "芋泥咸蛋味", "咸蛋芋泥": "芋泥咸蛋味",
+  "韭菜味": "韭菜味", "菜脯味": "菜脯味", "土豆味": "土豆味", "玉米味": "玉米味",
+  "南瓜味": "南瓜味", "香芋味": "香芋味", "紫薯味": "紫薯味", "竹笋味": "竹笋味",
+  "芋泥": "芋泥咸蛋味", "韭菜": "韭菜味", "菜脯": "菜脯味", "土豆": "土豆味",
+  "玉米": "玉米味", "南瓜": "南瓜味", "红萝卜": "红萝卜", "红萝卜味": "红萝卜",
+  "香芋": "香芋味", "紫薯": "紫薯味", "竹笋": "竹笋味", "鲜笋": "竹笋味", "芋头": "香芋味"
+};
+
+// 其他小吃完整品名（长词优先匹配）
+var OTHER_NAMES = ["小南瓜芋泥", "韭黄虎皮卷", "韭黄虾卷", "蔬菜春卷", "芋泥春卷", "韭菜春卷",
+  "香芋条", "土豆条", "香芋饼", "土豆饼", "萝卜饼", "菜头丸", "红桃粿", "紫菜卷", "粿肉", "虾饺", "辣椒水", "小米", "小土豆", "小桃粿"];
+
+// "各N"粘连句式（如「芋头士豆菜脯各5」）中：口味词 → 饼
+var GE_SPECIAL = { "芋头": "香芋饼", "土豆": "土豆饼", "菜脯": "萝卜饼" };
+
+// 猪脚圈标题行模式：「猪脚圈」单独出现后，裸写的口味词 → 对应饼
+var PF_MAP = { "土豆": "土豆饼", "士豆": "土豆饼", "芋头": "香芋饼", "香芋": "香芋饼",
+  "萝卜": "萝卜饼", "红萝卜": "萝卜饼", "菜脯": "萝卜饼", "菜头": "萝卜饼" };
+
+// 错别字/别名（每个 key 只替换一次，避免循环）
+var TYPO = { "无米果": "无米粿", "菜谱": "菜脯", "虎皮韭黄": "韭黄虎皮卷", "虎皮卷": "韭黄虎皮卷",
+  "菜头饼": "萝卜饼", "淮山": "准山", "士豆": "土豆", "萝卜干": "菜脯", "芋头条": "香芋条", "土豆糕": "土豆条",
+  "水晶粉粿": "水晶球", "菜丸子": "菜头丸", "芋头饼": "香芋饼", "蔬菜卷": "蔬菜春卷", "腐皮卷": "韭黄虎皮卷",
+  "海丰小米": "小米", "手作粿": "猪脚圈", "芋泥卷": "芋泥春卷" };
+
+var IGNORE_WORDS = ["真空", "标", "朱波", "黄丽敏", "吴先森", "陈思婷", "苏先生", "苏生", "苏先森", "昌岗店", "林伟棚", "陈创彬", "许坤轩", "林坪地", "林祥", "郑森鑫", "许水城", "林淑玲", "陈智卿", "苏志喜", "林福皇"];
+
+/* ================= 解析 ================= */
+function normalizeName(n) {
+  n = n.trim().replace(/的+$/, "").trim(); // 「韭菜的20斤」带"的"字 → 去掉
+  for (var k in TYPO) {
+    if (n.indexOf(k) >= 0) n = n.split(k).join(TYPO[k]);
+  }
+  return n;
+}
+
+function flavorFromWumiguo(n) {
+  var idx = n.indexOf("无米粿");
+  var has = idx >= 0;
+  if (!has) idx = n.indexOf("粿");
+  var before = n.substring(0, idx).trim();
+  if (has) {
+    // 口味可在「无米粿」之后：无米粿（韭菜）/ 无米粿：韭菜 / 无米粿韭菜
+    var after = n.substring(idx + 3).trim()
+      .replace(/^[（(【\[:：、,，\s]+/, "").replace(/[）)】\]。.、,，]+$/, "").trim();
+    if (after) return after;
+    if (before) return before; // 「韭菜无米粿」口味在前
+    return "";                 // 纯「无米粿」标题
+  }
+  return before;
+}
+
+function resolveItem(nameIn) {
+  var n = normalizeName(nameIn);
+
+  // 其他小吃完整品名优先（长词）
+  for (var i = 0; i < OTHER_NAMES.length; i++) {
+    if (n.indexOf(OTHER_NAMES[i]) >= 0) {
+      var on = OTHER_NAMES[i];
+      return { name: on, series: "others", price: PRICES.others[on], unit: UNIT_OVERRIDE[on] || "斤" };
+    }
+  }
+  // 容错：AI 可能给口味词误加「味」（如「韭菜春卷」→「韭菜味春卷」），去掉「味」再匹配一次
+  var nLite = n.replace(/味/g, "");
+  if (nLite !== n) {
+    for (var i2 = 0; i2 < OTHER_NAMES.length; i2++) {
+      if (nLite.indexOf(OTHER_NAMES[i2]) >= 0) {
+        var on2 = OTHER_NAMES[i2];
+        return { name: on2, series: "others", price: PRICES.others[on2], unit: UNIT_OVERRIDE[on2] || "斤" };
+      }
+    }
+  }
+
+  // 无米粿系列（含"粿"字）
+  if (n.indexOf("粿") >= 0) {
+    var f = flavorFromWumiguo(n);
+    if (!f) return null; // 纯"无米粿"标题
+    var disp = WMG_FLAVOR[f];
+    if (disp && PRICES.wumiguo[disp] !== undefined) {
+      return { name: disp, series: "wumiguo", price: PRICES.wumiguo[disp], unit: "斤" };
+    }
+    return { name: f, series: "unknown" };
+  }
+
+  // 水晶球系列（含"水晶球"字样，口味名可在前或后，如「韭菜水晶球」「水晶粉粿韭菜」）
+  if (n.indexOf("水晶球") >= 0) {
+    var idx = n.indexOf("水晶球");
+    var sf = n.substring(0, idx).trim();
+    if (!(sf && PRICES.shuijingqiu[sf] !== undefined)) {
+      var sf2 = n.substring(idx + 3).trim();
+      if (sf2 && PRICES.shuijingqiu[sf2] !== undefined) sf = sf2;
+    }
+    if (sf && PRICES.shuijingqiu[sf] !== undefined) {
+      return { name: sf, series: "shuijingqiu", price: PRICES.shuijingqiu[sf], unit: "斤" };
+    }
+    return { name: "水晶球", series: "shuijingqiu", price: null }; // 纯壳无口味：等待与口味名合并
+  }
+
+  // 带"味"或纯口味名 → 无米粿
+  var disp2 = WMG_FLAVOR[n];
+  if (disp2 && PRICES.wumiguo[disp2] !== undefined) {
+    return { name: disp2, series: "wumiguo", price: PRICES.wumiguo[disp2], unit: "斤" };
+  }
+
+  // 水晶球纯口味兜底（木耳/红豆/奶黄/准山等）
+  if (PRICES.shuijingqiu[n] !== undefined) {
+    return { name: n, series: "shuijingqiu", price: PRICES.shuijingqiu[n], unit: "斤" };
+  }
+
+  return { name: n, series: "unknown" };
+}
+
+// 词典抓词（长词优先）
+function extractNames(head) {
+  var dict = OTHER_NAMES.concat(Object.keys(WMG_FLAVOR), Object.keys(PRICES.shuijingqiu));
+  dict.sort(function(a, b) { return b.length - a.length; });
+  var found = [], rest = head;
+  while (rest.length > 0) {
+    var matched = false;
+    for (var i = 0; i < dict.length; i++) {
+      if (rest.indexOf(dict[i]) === 0) {
+        found.push(dict[i]);
+        rest = rest.substring(dict[i].length);
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) rest = rest.substring(1);
+  }
+  return found;
+}
+
+// 系列上下文模式：遇到「水晶球/水晶粉粿」标题行后，后续裸口味名（香芋/韭菜/菜脯等）归水晶球系列
+var seriesMode = "wumiguo";
+
+// 按当前系列模式解析：水晶球模式下，无米粿裸口味（不带「味」字）重映射为水晶球口味
+function resolveInMode(name) {
+  var r = resolveItem(name);
+  if (seriesMode === "shuijingqiu" && r && r.series === "wumiguo") {
+    var f = r.name.replace(/味$/, "");
+    if (PRICES.shuijingqiu[f] !== undefined) {
+      return { name: f, series: "shuijingqiu", price: PRICES.shuijingqiu[f], unit: "斤" };
+    }
+  }
+  return r;
+}
+
+function addItem(name, qty, items, unknown) {
+  var r = resolveInMode(name);
+  if (r && r.series !== "unknown" && r.price !== null && r.price !== undefined) items.push({ item: r, qty: qty });
+  else unknown.push({ name: name, qty: qty });
+}
+
+// "各N"句式：token 内的词用 GE_SPECIAL（饼），独立 pendingNames 按正常解析（无米粿）
+function handleGe(tok, pendingNames, items, unknown, pigActive) {
+  var m = tok.match(/^([\s\S]*?)各\s*(\d+(?:\.\d+)?)\s*([斤个卷包条])?$/);
+  if (!m) { unknown.push({ name: tok, qty: null }); return; }
+  var qty = parseFloat(m[2]);
+  var head = normalizeName(m[1]).replace(/\d+/g, "").replace(/[斤个卷包]+/g, "");
+  // 「猪脚圈三个口味各10」/ 猪脚圈标题后的「3个口味各5」→ 三饼各 N 斤
+  if (head.indexOf("猪脚圈") >= 0 || (pigActive && head.indexOf("口味") >= 0)) {
+    items.push({ item: resolveItem("香芋饼"), qty: qty });
+    items.push({ item: resolveItem("土豆饼"), qty: qty });
+    items.push({ item: resolveItem("萝卜饼"), qty: qty });
+    return;
+  }
+  var words = extractNames(head);
+  for (var i = 0; i < words.length; i++) {
+    var target = GE_SPECIAL[words[i]] || words[i];
+    addItem(target, qty, items, unknown);
+  }
+  // 空格分开的 pendingNames 品名（如「韭菜 菜谱 竹笋 各2斤」）→ 正常解析
+  for (var j = 0; j < pendingNames.length; j++) {
+    addItem(pendingNames[j], qty, items, unknown);
+  }
+}
+
+// 手动按数字边界拆分（兼容所有手机浏览器，无 lookbehind 依赖）
+function splitByDigits(s) {
+  var out = [], cur = s[0] || "";
+  var protect = "各斤个卷*条"; // 数字后的单位/符号（「2条」「5斤」「各2斤」不拆）
+  var protectBefore = "各*"; // 数字前的特殊字符（「各2斤」「韭菜*2」不拆；品名字如「条」不保护）
+  function isDigit(c) { return c >= "0" && c <= "9"; }
+  for (var i = 1; i < s.length; i++) {
+    var c = s[i], p = s[i - 1];
+    var cut = false;
+    if (isDigit(p) && !isDigit(c) && protect.indexOf(c) < 0) cut = true;
+    else if (!isDigit(p) && isDigit(c) && protectBefore.indexOf(p) < 0) cut = true;
+    if (cut) { out.push(cur); cur = c; } else { cur += c; }
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
+function parseInput(text) {
+  var items = [], unknown = [], ignored = [], notes = [];
+  var pendingNames = [], pendingQty = null;
+  var shellPending = false, shellQty = null; // 水晶球壳（无口味）等待与口味名合并
+  var nextNumberOwned = false; // 上一个 token 是未知品名 → 紧随的数字归它，防止数量错配
+  var pigFootSeen = false;
+  var pigFootMode = false; // 「猪脚圈」标题行模式：后续裸口味词按饼算
+  seriesMode = "wumiguo"; // 默认无米粿模式；遇「水晶球/水晶粉粿」标题行切换
+
+  text = text.replace(/(\d+)包/g, "$1斤");
+
+  // 地址/电话行前置忽略（整行含地址字或11位电话 → 不参与拆分）
+  var addressRe = /[省市县区镇乡村路街号铺坊巷栋单元大厦]/;
+  var rawTokens = text.split(/[\s,，、;；:：。.\n]+/).filter(function(t) { return t.length > 0; });
+  var tokens = [];
+  for (var t = 0; t < rawTokens.length; t++) {
+    // 去掉括号（「无米粿（韭菜30，竹笋8）」拆开后右括号会残留成独立token抢数字）
+    var tk = rawTokens[t].replace(/真空/g, "").replace(/标/g, "").replace(/[（()）]/g, "");
+    if (!tk) continue;
+    if (addressRe.test(tk) || /^\d{10,11}$/.test(tk)) { ignored.push(tk); continue; }
+    // 按数字边界拆粘连串（"各/斤/个/卷/*"视为保护字符，避免拆坏「各2斤」「紫菜卷15」「韭菜*2」）
+    var parts = splitByDigits(tk);
+    for (var p = 0; p < parts.length; p++) if (parts[p]) tokens.push(parts[p]);
+  }
+
+  for (var i = 0; i < tokens.length; i++) {
+    var tok = tokens[i];
+
+    // 地址 / 电话
+    if (/[省市县区镇乡村路街号铺坊巷栋单元大厦]/.test(tok) || /^\d{10,11}$/.test(tok)) {
+      ignored.push(tok); continue;
+    }
+
+    // 分隔线（---------、=== 等）→ 忽略
+    if (/^-{3,}|={3,}|—{3,}$/.test(tok.trim())) continue;
+
+    // 系列标题行：「水晶球」「水晶粉粿」「无米粿」（可带「系列」后缀）单独成行 → 切换后续裸口味的归属系列
+    // （若后跟数字如「水晶粉粿5」/「水晶粉粿 5」，是「壳+数量」语义，不当作标题行）
+    var titleN = normalizeName(tok).replace(/[：:、,，\s（）()【】\[\]系列]/g, "");
+    if (titleN === "水晶球") {
+      var nextNumTok = tokens[i + 1] && /^(\d+(?:\.\d+)?)([斤个卷条]?)$/.test(tokens[i + 1]);
+      if (!nextNumTok) { seriesMode = "shuijingqiu"; pigFootMode = false; continue; }
+    }
+    if (titleN === "无米粿") { seriesMode = "wumiguo"; pigFootMode = false; continue; }
+
+    // 猪脚圈标题行模式：其后裸写的 土豆/芋头/萝卜/菜脯 → 对应饼（可带数量，如「土豆3」）
+    if (pigFootMode) {
+      var pfN = normalizeName(tok).replace(/[斤个包]/g, "");
+      var pfQM = pfN.match(/^(.*?)(\d+(?:\.\d+)?)$/);
+      var pfBase = pfQM ? pfQM[1] : pfN;
+      if (PF_MAP[pfBase]) {
+        tok = PF_MAP[pfBase] + (pfQM ? pfQM[2] : "");
+      }
+    }
+
+    // 纯数字（可带单位）→ 配 pendingNames 或暂存 pendingQty
+    var numM = tok.match(/^(\d+(?:\.\d+)?)([斤个卷条]?)$/);
+    if (numM) {
+      var q0 = parseFloat(numM[1]);
+      if (nextNumberOwned && !pendingNames.length) {
+        // 紧跟在未知品名后且期间无新品名 → 数量归该品名（如「土豆粿 2斤」），避免错配
+        var lastU = unknown[unknown.length - 1];
+        if (lastU && lastU.qty === null) lastU.qty = q0;
+        nextNumberOwned = false;
+        continue;
+      }
+      nextNumberOwned = false; // 已出现新待配品名（如「昌岗店 无米粿韭菜30」）→ 数字走正常配对
+      if (shellPending) {
+        // 壳+数量：前面若有口味名则合并为水晶球，否则提示缺口味
+        if (pendingNames.length) {
+          var nm1 = pendingNames.pop();
+          var ms2 = resolveItem(nm1 + "水晶粉粿");
+          if (ms2 && ms2.series !== "unknown" && ms2.price !== null && ms2.price !== undefined) {
+            items.push({ item: ms2, qty: q0 });
+            shellPending = false;
+            continue;
+          }
+          pendingNames.push(nm1);
+        }
+        unknown.push({ name: "水晶粉粿(缺口味名)", qty: q0 });
+        shellPending = false;
+        continue;
+      }
+      if (pendingNames.length) {
+        var nm0 = pendingNames.pop();
+        addItem(nm0, q0, items, unknown);
+      } else {
+        pendingQty = q0;
+      }
+      continue;
+    }
+
+    // "各N"
+    if (tok.indexOf("各") >= 0) {
+      handleGe(tok, pendingNames, items, unknown, pigFootMode);
+      pendingNames = []; pendingQty = null;
+      continue;
+    }
+
+    // 猪脚圈（含别名「手作粿」）
+    var tokN = normalizeName(tok);
+    if (tokN.indexOf("猪脚圈") >= 0) {
+      var pf = tokN.match(/^猪脚圈(\d+(?:\.\d+)?)?$/);
+      if (pf && pf[1]) {
+        var pn = parseFloat(pf[1]);
+        items.push({ item: resolveItem("香芋饼"), qty: pn });
+        items.push({ item: resolveItem("土豆饼"), qty: pn });
+        items.push({ item: resolveItem("萝卜饼"), qty: pn });
+      } else {
+        pigFootSeen = true;
+        pigFootMode = true; // 后续裸口味词（土豆3/芋头3/萝卜3）按饼算，直到系列标题行
+      }
+      pendingNames = []; pendingQty = null;
+      continue;
+    }
+
+    // 品名+数字(+单位)，支持「韭菜*2」
+    var pm = tok.match(/^(.*?)\*?(\d+(?:\.\d+)?)\s*([斤个卷包条])?$/);
+    if (pm && pm[1].trim().length > 0) {
+      var namePart = pm[1].trim();
+      var qty = parseFloat(pm[2]);
+      var nShell = resolveInMode(namePart);
+      if (nShell && nShell.series === "shuijingqiu" && nShell.price === null) {
+        shellPending = true; shellQty = qty; // 水晶球壳+数量（如「水晶粉粿5」）→ 等口味名
+      } else {
+        if (namePart.indexOf("无米粿") >= 0) seriesMode = "wumiguo";
+        addItem(namePart, qty, items, unknown);
+        pendingNames = []; pendingQty = null;
+      }
+      continue;
+    }
+
+    // 数字+品名（容错，如「23菜脯」「5斤韭菜」——去掉品名前的单位字）
+    var dm = tok.match(/^(\d+(?:\.\d+)?)\s*(.+)$/);
+    if (dm) {
+      var dq = parseFloat(dm[1]), dn = dm[2].trim().replace(/^[斤个卷包条]+/, "");
+      if (pendingNames.length) {
+        var last = pendingNames.pop();
+        addItem(last, dq, items, unknown);
+      }
+      addItem(dn, dq, items, unknown);
+      pendingQty = null;
+      continue;
+    }
+
+    // 纯品名
+    var rr = resolveInMode(tok);
+    if (rr && rr.series !== "unknown") {
+      var isShell = rr.series === "shuijingqiu" && rr.price === null;
+      if (isShell) {
+        shellPending = true; // 水晶球壳（如「水晶粉粿」）暂存，等口味名合并
+        continue;
+      }
+      if (shellPending) {
+        // 壳+口味名 → 合并为水晶球口味
+        var mergedShell = resolveItem(tok + "水晶粉粿");
+        if (mergedShell && mergedShell.series !== "unknown" && mergedShell.price !== null && mergedShell.price !== undefined) {
+          var mq = (pendingQty !== null ? pendingQty : shellQty);
+          if (mq !== null) {
+            items.push({ item: mergedShell, qty: mq });
+            pendingQty = null; shellQty = null;
+          } else {
+            pendingNames.push(tok + "水晶粉粿");
+          }
+          shellPending = false;
+          continue;
+        }
+      }
+      if (pendingQty !== null) {
+        items.push({ item: rr, qty: pendingQty });
+        pendingQty = null;
+      } else {
+        pendingNames.push(tok);
+      }
+      continue;
+    }
+
+    // 无法识别 → 忽略词 or 未知
+    var isIgnore = false;
+    for (var k = 0; k < IGNORE_WORDS.length; k++) {
+      if (tok.indexOf(IGNORE_WORDS[k]) >= 0) { isIgnore = true; break; }
+    }
+    if (isIgnore) ignored.push(tok);
+    else { unknown.push({ name: tok, qty: null }); nextNumberOwned = true; }
+  }
+
+  // 结尾遗留
+  for (var r = 0; r < pendingNames.length; r++) unknown.push({ name: pendingNames[r], qty: null });
+  if (pendingQty !== null) unknown.push({ name: "(数量未配品名) " + pendingQty, qty: null });
+  if (shellPending) unknown.push({ name: "水晶粉粿(缺口味名)", qty: shellQty });
+  if (pigFootSeen) notes.push("「猪脚圈」=芋头饼+土豆饼+萝卜饼总称，数量以「芋头士豆菜脯各N」为准");
+
+  return { items: items, unknown: unknown, ignored: ignored, notes: notes };
+}
+
+/* ================= 生成账单 ================= */
+function generate() {
+  var text = document.getElementById("input").value;
+  renderBill(parseInput(text), text);
+}
+
+function renderBill(res, sourceText) {
+  // 合并同品名
+  var merged = {}, order = [];
+  for (var i = 0; i < res.items.length; i++) {
+    var it = res.items[i];
+    var key = it.item.series + "|" + it.item.name + "|" + it.item.unit;
+    if (!merged[key]) { merged[key] = { item: it.item, qty: 0 }; order.push(key); }
+    merged[key].qty += it.qty;
+  }
+
+  var groups = { wumiguo: [], shuijingqiu: [], others: [] };
+  var total = 0;
+  for (var j = 0; j < order.length; j++) {
+    var o = merged[order[j]];
+    var amount = Math.round(o.item.price * o.qty * 100) / 100;
+    total += amount;
+    groups[o.item.series].push({ name: o.item.name, qty: o.qty, unit: o.item.unit, amount: amount });
+  }
+
+  var lines = [];
+  if (groups.wumiguo.length) {
+    lines.push("无米粿系列");
+    for (var a = 0; a < groups.wumiguo.length; a++) lines.push(lineStr(groups.wumiguo[a]));
+    lines.push("---------");
+  }
+  if (groups.shuijingqiu.length) {
+    lines.push("水晶球系列");
+    for (var b = 0; b < groups.shuijingqiu.length; b++) lines.push(lineStr(groups.shuijingqiu[b]));
+    lines.push("---------");
+  }
+  if (groups.others.length) {
+    lines.push("其他小吃");
+    for (var c = 0; c < groups.others.length; c++) lines.push(lineStr(groups.others[c]));
+    lines.push("---------");
+  }
+  if (!lines.length) lines.push("（没有识别到有效条目）");
+  lines.push("");
+  lines.push("共计 ¥" + fmt(total));
+
+  document.getElementById("billText").textContent = lines.join("\n");
+
+  var notes = [];
+  for (var n = 0; n < res.notes.length; n++) notes.push("ℹ️ " + res.notes[n]);
+  if (res.unknown.length) {
+    var un = res.unknown.map(function(u) { return u.name + (u.qty !== null ? " " + u.qty : ""); }).join("、");
+    notes.push("⚠️ 无法识别（可能是新品类/顾客名，请确认）：" + un);
+  }
+  if (res.ignored.length) notes.push("（已忽略：顾客名/地址/电话/标记等）");
+  document.getElementById("noteText").textContent = notes.join("\n");
+  document.getElementById("noteText").classList.remove("green");
+  document.getElementById("resultCard").classList.remove("hidden");
+  document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function lineStr(g) { return g.name + " " + g.qty + g.unit + " ¥" + fmt(g.amount); }
+
+function fmt(n) { return Math.round(n) === n ? String(n) : n.toFixed(2); }
+
+/* ================= AI 识别已移除：纯规则引擎算价 ================= */
+
+function copyBill() {
+  var t = document.getElementById("billText").textContent;
+  var ta = document.createElement("textarea");
+  ta.value = t; document.body.appendChild(ta); ta.select();
+  var ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) {}
+  if (!ok && navigator.clipboard) {
+    navigator.clipboard.writeText(t).then(function() { flash("✅ 已复制，去微信粘贴即可"); });
+    return;
+  }
+  document.body.removeChild(ta);
+  flash("✅ 已复制，去微信粘贴即可");
+}
+
+function flash(msg) {
+  var n = document.getElementById("noteText");
+  n.textContent = msg; n.classList.add("green");
+}
+
+function resetBill() {
+  document.getElementById("input").value = "";
+  document.getElementById("resultCard").classList.add("hidden");
+  document.getElementById("input").focus();
+}
+</script>
+</body>
+</html>
