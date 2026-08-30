@@ -1,0 +1,5 @@
+# 含腾讯云 SecretId/SecretId/SecretKey 等敏感凭证的云端脚本，严禁推送到公开仓库
+cloud/
+
+# 依赖目录
+node_modules/
