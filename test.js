@@ -66,7 +66,7 @@ function runCase(name, text, expect) {
 function priceFor(item) {
   const PRICES = { wumiguo: { "韭菜味": 8, "菜脯味": 10, "土豆味": 10, "玉米味": 10, "南瓜味": 10, "红萝卜": 10, "香芋味": 12, "紫薯味": 11, "竹笋味": 11, "芋泥咸蛋味": 12 },
     shuijingqiu: { "芋泥": 12, "红豆": 12, "紫薯": 12, "准山": 12, "奶黄": 12, "香芋": 12, "玉米": 12, "菜脯": 12, "韭菜": 12, "红萝卜": 12, "木耳": 12, "竹笋": 12 },
-    others: { "香芋条": 12, "土豆条": 12, "蔬菜春卷": 16, "芋泥春卷": 16, "粿肉": 22, "韭黄虎皮卷": 22, "韭黄虾卷": 25, "虾饺": 22, "香芋饼": 14, "土豆饼": 14, "萝卜饼": 14, "菜头丸": 11, "小南瓜芋泥": 13, "紫菜卷": 22, "红桃粿": 2.5, "辣椒水": 8, "小米": 13, "小土豆": 12, "小桃粿": 14, "韭菜春卷": 17, "海丰小米": 12, "菜粿": 12, "三角虾酥": 12, "墨鱼虾排": 16, "辣椒酱": 35, "生紫菜卷": 16 } };
+    others: { "香芋条": 12, "土豆条": 12, "蔬菜春卷": 16, "芋泥春卷": 16, "粿肉": 22, "韭黄虎皮卷": 22, "韭黄虾卷": 25, "虾饺": 22, "香芋饼": 14, "土豆饼": 14, "萝卜饼": 14, "菜头丸": 11, "小南瓜芋泥": 13, "紫菜卷": 22, "红桃粿": 2.5, "辣椒水": 8, "小米": 12, "小土豆": 12, "小桃粿": 14, "韭菜春卷": 17, "海丰小米": 12, "菜粿": 12, "三角虾酥": 12, "墨鱼虾排": 16, "辣椒酱": 35, "生紫菜卷": 16 } };
   return PRICES[item.series][item.name];
 }
 function PRICE(item) { return priceFor(item); }
@@ -96,15 +96,15 @@ const cases = [
     expect: { total: 48, lines: ['others|辣椒水 1斤 ¥8', 'wumiguo|韭菜味 5斤 ¥40'], unknown: [] } },
   { name: '账单11 内置新品类(韭菜春卷17)手动输入', text: '韭菜春卷 1',
     expect: { total: 17, lines: ['others|韭菜春卷 1斤 ¥17'], unknown: [] } },
-  { name: '账单14 小米(新增13/斤)', text: '小米2斤',
+  { name: '账单14 小米(12/斤)', text: '小米2斤',
     pre: () => api.saveCustomList([]),
-    expect: { total: 26, lines: ['others|小米 2斤 ¥26'], unknown: [] } },
+    expect: { total: 24, lines: ['others|小米 2斤 ¥24'], unknown: [] } },
   { name: '账单15 香芋条/土豆条按条+芋头条别名', text: '香芋条2条 土豆条3条 芋头条1条',
     pre: () => api.saveCustomList([]),
     expect: { total: 72, lines: ['others|香芋条 3条 ¥36', 'others|土豆条 3条 ¥36'], unknown: [] } },
   { name: '账单16 混合(小米+条类)', text: '小米1斤 香芋条1条 土豆条1条 芋头条1条',
     pre: () => api.saveCustomList([]),
-    expect: { total: 49, lines: ['others|香芋条 2条 ¥24', 'others|土豆条 1条 ¥12', 'others|小米 1斤 ¥13'], unknown: [] } },
+    expect: { total: 48, lines: ['others|香芋条 2条 ¥24', 'others|土豆条 1条 ¥12', 'others|小米 1斤 ¥12'], unknown: [] } },
   { name: '账单17 水晶粉粿(口味在前粘连)', text: '韭菜水晶粉粿5',
     pre: () => api.saveCustomList([]),
     expect: { total: 60, lines: ['shuijingqiu|韭菜 5斤 ¥60'], unknown: [] } },
@@ -123,9 +123,9 @@ const cases = [
   { name: '账单22 无米粿(括号)写法', text: '无米粿（韭菜）3斤 菜脯2',
     pre: () => api.saveCustomList([]),
     expect: { total: 44, lines: ['wumiguo|韭菜味 3斤 ¥24', 'wumiguo|菜脯味 2斤 ¥20'], unknown: [] } },
-  { name: '账单23 用户新订单(391 水晶粉粿标题行)', text: '无米粿（韭菜）3斤\n水晶粉粿\n香芋2斤\n韭菜4斤\n菜脯7斤\n小米10斤\n红桃粿10个\n香芋条1条\n虾饺2斤',
+  { name: '账单23 用户新订单(381 水晶粉粿标题行)', text: '无米粿（韭菜）3斤\n水晶粉粿\n香芋2斤\n韭菜4斤\n菜脯7斤\n小米10斤\n红桃粿10个\n香芋条1条\n虾饺2斤',
     pre: () => api.saveCustomList([]),
-    expect: { total: 391, lines: ['wumiguo|韭菜味 3斤 ¥24', 'shuijingqiu|香芋 2斤 ¥24', 'shuijingqiu|菜脯 7斤 ¥84', 'shuijingqiu|韭菜 4斤 ¥48', 'others|小米 10斤 ¥130', 'others|红桃粿 10个 ¥25', 'others|香芋条 1条 ¥12', 'others|虾饺 2斤 ¥44'], unknown: [] } },
+    expect: { total: 381, lines: ['wumiguo|韭菜味 3斤 ¥24', 'shuijingqiu|香芋 2斤 ¥24', 'shuijingqiu|菜脯 7斤 ¥84', 'shuijingqiu|韭菜 4斤 ¥48', 'others|小米 10斤 ¥120', 'others|红桃粿 10个 ¥25', 'others|香芋条 1条 ¥12', 'others|虾饺 2斤 ¥44'], unknown: [] } },
   { name: '账单25 水晶球标题行后切回无米粿', text: '水晶粉粿\n香芋2斤\n无米粿 韭菜3',
     pre: () => api.saveCustomList([]),
     expect: { total: 48, lines: ['shuijingqiu|香芋 2斤 ¥24', 'wumiguo|韭菜味 3斤 ¥24'], unknown: [] } },
@@ -321,9 +321,9 @@ const cases = [
   { name: '账单88 海丰小米独立计价(36)', text: '海丰小米3斤',
     pre: () => api.saveCustomList([]),
     expect: { total: 36, lines: ['others|海丰小米 3斤 ¥36'], unknown: [] } },
-  { name: '账单89 海丰小米与小米区分(62)', text: '海丰小米3斤 小米2斤',
+  { name: '账单89 海丰小米与小米区分(60)', text: '海丰小米3斤 小米2斤',
     pre: () => api.saveCustomList([]),
-    expect: { total: 62, lines: ['others|海丰小米 3斤 ¥36', 'others|小米 2斤 ¥26'], unknown: [] } },
+    expect: { total: 60, lines: ['others|海丰小米 3斤 ¥36', 'others|小米 2斤 ¥24'], unknown: [] } },
   { name: '账单90 菜粿(60)', text: '菜粿5斤',
     pre: () => api.saveCustomList([]),
     expect: { total: 60, lines: ['others|菜粿 5斤 ¥60'], unknown: [] } },
@@ -345,6 +345,12 @@ const cases = [
   { name: '账单96 菜头猪脚圈别名=萝卜饼(140)', text: '菜头猪脚圈 10斤',
     pre: () => api.saveCustomList([]),
     expect: { total: 140, lines: ['others|萝卜饼 10斤 ¥140'], unknown: [] } },
+  { name: '账单97 素菜卷别名=蔬菜春卷(240)', text: '素菜卷 15斤',
+    pre: () => api.saveCustomList([]),
+    expect: { total: 240, lines: ['others|蔬菜春卷 15斤 ¥240'], unknown: [] } },
+  { name: '账单98 盒单位等同斤只取数量(140)', text: '三角虾酥5盒 墨鱼虾排5盒',
+    pre: () => api.saveCustomList([]),
+    expect: { total: 140, lines: ['others|三角虾酥 5斤 ¥60', 'others|墨鱼虾排 5斤 ¥80'], unknown: [] } },
 ];
 
 for (const c of cases) {
