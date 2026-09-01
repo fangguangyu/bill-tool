@@ -357,7 +357,7 @@ function handleGe(tok, pendingNames, items, unknown, pigActive) {
   }
   var words = extractNames(head);
   for (var i = 0; i < words.length; i++) {
-    var target = GE_SPECIAL[words[i]] || words[i];
+    var target = (pigActive && GE_SPECIAL[words[i]]) ? GE_SPECIAL[words[i]] : words[i];
     addItem(target, qty, items, unknown);
   }
   // 空格分开的 pendingNames 品名（如「韭菜 菜谱 竹笋 各2斤」）→ 正常解析

@@ -351,6 +351,9 @@ const cases = [
   { name: '账单98 盒单位等同斤只取数量(140)', text: '三角虾酥5盒 墨鱼虾排5盒',
     pre: () => api.saveCustomList([]),
     expect: { total: 140, lines: ['others|三角虾酥 5斤 ¥60', 'others|墨鱼虾排 5斤 ¥80'], unknown: [] } },
+  { name: '账单99 普通各N中萝卜干=菜脯味非萝卜饼(838)', text: '珠江新城\n无米粿韭菜30、萝卜干和竹笋各18、菜头丸20',
+    pre: () => api.saveCustomList([]),
+    expect: { total: 838, lines: ['wumiguo|韭菜味 30斤 ¥240', 'wumiguo|菜脯味 18斤 ¥180', 'wumiguo|竹笋味 18斤 ¥198', 'others|菜头丸 20斤 ¥220'], unknown: ['珠江新城'] } },
 ];
 
 for (const c of cases) {
