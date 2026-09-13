@@ -163,7 +163,7 @@ var PRICES = {
     "韭黄虎皮卷": 22, "韭黄虾卷": 25, "虾饺": 22, "香芋饼": 14, "土豆饼": 14,
     "萝卜饼": 14, "菜头丸": 11, "小南瓜芋泥": 13, "紫菜卷": 22, "红桃粿": 2.5,
     "辣椒水": 8, "小米": 12, "小土豆": 12, "小桃粿": 14, "韭菜春卷": 17,
-    "海丰小米": 12, "菜粿": 12, "三角虾酥": 12, "墨鱼虾排": 16, "辣椒酱": 35, "生紫菜卷": 16
+    "海丰小米": 12, "菜粿": 12, "三角虾酥": 12, "墨鱼虾排": 16, "辣椒酱": 35, "生紫菜卷": 16, "鲜虾春卷": 18, "芋泥油粿": 15
   }
 };
 
@@ -198,7 +198,7 @@ var WMG_FLAVOR = {
 };
 
 // 其他小吃完整品名（长词优先匹配）
-var OTHER_NAMES = ["海丰小米", "小南瓜芋泥", "韭黄虎皮卷", "韭黄虾卷", "蔬菜春卷", "芋泥春卷", "韭菜春卷",
+var OTHER_NAMES = ["海丰小米", "小南瓜芋泥", "韭黄虎皮卷", "韭黄虾卷", "蔬菜春卷", "芋泥春卷", "韭菜春卷", "鲜虾春卷", "芋泥油粿",
   "香芋条", "土豆条", "香芋饼", "土豆饼", "萝卜饼", "菜头丸", "红桃粿", "生紫菜卷", "紫菜卷", "粿肉", "虾饺", "辣椒酱", "辣椒水", "小米", "小土豆", "小桃粿", "菜粿", "三角虾酥", "墨鱼虾排"];
 
 // "各N"粘连句式（如「芋头士豆菜脯各5」）中：口味词 → 饼
@@ -212,7 +212,7 @@ var PF_MAP = { "土豆": "土豆饼", "士豆": "土豆饼", "芋头": "香芋�
 var TYPO = { "无米果": "无米粿", "红桃果": "红桃粿", "菜头猪脚圈": "萝卜饼", "菜谱": "菜脯", "虎皮韭黄": "韭黄虎皮卷", "虎皮卷": "韭黄虎皮卷",
   "菜头饼": "萝卜饼", "淮山": "准山", "士豆": "土豆", "萝卜干": "菜脯", "芋头条": "香芋条", "土豆糕": "土豆条",
   "水晶粉粿": "水晶球", "菜丸子": "菜头丸", "芋头饼": "香芋饼", "蔬菜卷": "蔬菜春卷", "素菜卷": "蔬菜春卷", "腐皮卷": "韭黄虎皮卷",
-  "手作粿": "猪脚圈", "芋泥卷": "芋泥春卷" };
+  "手作粿": "猪脚圈", "芋泥卷": "芋泥春卷", "果肉": "粿肉" };
 
 var IGNORE_WORDS = ["真空", "标", "朱波", "黄丽敏", "吴先森", "陈思婷", "苏先生", "苏生", "苏先森", "昌岗店", "林伟棚", "陈创彬", "许坤轩", "林坪地", "林祥", "郑森鑫", "许水城", "林淑玲", "陈智卿", "苏志喜", "林福皇"];
 
@@ -393,6 +393,9 @@ function parseInput(text) {
   seriesMode = "wumiguo"; // 默认无米粿模式；遇「水晶球/水晶粉粿」标题行切换
 
   text = text.replace(/(\d+)包/g, "$1斤");
+  // 兼容「序号+星号+馅字+分类标题」结构化订单：去馅字、星号转空格（"韭菜馅 *5" → "韭菜 5"）
+  text = text.replace(/馅/g, "");
+  text = text.replace(/\*\s*(\d+(?:\.\d+)?)/g, " $1");
 
   // 地址/电话行前置忽略（整行含地址字或11位电话 → 不参与拆分）
   var addressRe = /[省市县区镇乡村路街号铺坊巷栋单元大厦]/;
@@ -401,8 +404,12 @@ function parseInput(text) {
   for (var t = 0; t < rawTokens.length; t++) {
     // 去掉括号（「无米粿（韭菜30，竹笋8）」拆开后右括号会残留成独立token抢数字）
     var tk = rawTokens[t].replace(/真空/g, "").replace(/标/g, "").replace(/[（()）]/g, "");
+    // 剥离题号装饰前缀（⒈⒉⒊⒋、⓵、⑴、1.、A. 等）：去掉开头所有非「中文/字母/数字」字符
+    tk = tk.replace(/^[^一-龥A-Za-z0-9]+/, "");
+    // 题号字母残留（如 C: / D: 拆分后的 "C"）→ 忽略
+    if (/^[A-Za-z]$/.test(tk)) { ignored.push(tk); continue; }
     if (!tk) continue;
-    if (addressRe.test(tk) || /^\d{10,11}$/.test(tk)) { ignored.push(tk); continue; }
+    if (addressRe.test(tk) || /^\d{10,11}$/.test(tk) || /联系人|收货|地址|电话|微信|甜汤/.test(tk)) { ignored.push(tk); continue; }
     // 按数字边界拆粘连串（"各/斤/个/卷/*"视为保护字符，避免拆坏「各2斤」「紫菜卷15」「韭菜*2」）
     var parts = splitByDigits(tk);
     for (var p = 0; p < parts.length; p++) if (parts[p]) tokens.push(parts[p]);
@@ -427,6 +434,7 @@ function parseInput(text) {
       if (!nextNumTok) { seriesMode = "shuijingqiu"; pigFootMode = false; continue; }
     }
     if (titleN === "无米粿") { seriesMode = "wumiguo"; pigFootMode = false; continue; }
+    if (titleN === "春卷") { pigFootMode = false; continue; }
 
     // 猪脚圈标题行模式：其后裸写的 土豆/芋头/萝卜/菜脯 → 对应饼（可带数量，如「土豆3」）
     if (pigFootMode) {
@@ -578,6 +586,14 @@ function parseInput(text) {
   return { items: items, unknown: unknown, ignored: ignored, notes: notes };
 }
 
+/* ================= 显示名映射 ================= */
+// 猪脚圈三件套不叫「饼」，统一改称「猪脚圈」变体（仅影响显示，不动引擎内部名）
+var DISPLAY_NAME = {
+  "香芋饼": "香芋猪脚圈",
+  "土豆饼": "土豆猪脚圈",
+  "萝卜饼": "菜头猪脚圈"
+};
+
 /* ================= 生成账单 ================= */
 function generate() {
   var text = document.getElementById("input").value;
@@ -606,7 +622,8 @@ function renderBill(res, sourceText) {
     var o = merged[order[j]];
     var amount = Math.round(o.item.price * o.qty * 100) / 100;
     total += amount;
-    groups[o.item.series].push({ name: o.item.name, qty: o.qty, unit: o.item.unit, amount: amount });
+    var dispName = DISPLAY_NAME[o.item.name] || o.item.name;
+    groups[o.item.series].push({ name: dispName, qty: o.qty, unit: o.item.unit, amount: amount });
   }
 
   var lines = [];
